@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
 
+from .inputs import amaterialize, materialize
 from .render import render_file
 from .template import Region, Template, Tolerance, safe_filename
 
@@ -242,27 +243,64 @@ def _write_overviews(out: Path, cand_pages, arrays, results) -> list[str]:
 
 def compare_file(
     template: str | os.PathLike | Template,
-    candidate: str | os.PathLike,
+    candidate,
     out_dir: str | os.PathLike | None = None,
     resize: bool = False,
     candidate_name: str | None = None,
+    only: list[str] | None = None,
     **overrides,
 ) -> CompareReport:
-    """Compare *candidate* to *template*. Overrides: threshold, max_diff_percent, shift."""
+    """Compare *candidate* to *template*.
+
+    *candidate* may be a path, bytes, a binary file object or a Playwright (sync) ``Download``.
+    *only* limits the check to the named regions. Overrides: threshold, max_diff_percent, shift.
+    """
     tpl = template if isinstance(template, Template) else Template.load(template)
-    pages = render_file(candidate, tpl.dpi)
+    if only:
+        tpl = filter_regions(tpl, only)
+    path, name = materialize(candidate, candidate_name)
+    pages = render_file(path, tpl.dpi)
     overrides = {k: v for k, v in overrides.items() if v is not None}
-    return compare_pages(
-        tpl, pages, candidate_name or Path(candidate).name, out_dir, resize, overrides or None
-    )
+    return compare_pages(tpl, pages, name, out_dir, resize, overrides or None)
 
 
-def assert_matches(template, candidate, out_dir=None, **kwargs) -> CompareReport:
-    """Raise AssertionError (with a per-region summary) unless every region matches."""
-    report = compare_file(template, candidate, out_dir=out_dir, **kwargs)
+def filter_regions(tpl: Template, names) -> Template:
+    import copy
+
+    if isinstance(names, str):
+        names = [names]
+    wanted = {n.casefold() for n in names}
+    out = copy.copy(tpl)
+    out.regions = [r for r in tpl.regions if r.name.casefold() in wanted]
+    missing = wanted - {r.name.casefold() for r in out.regions}
+    if missing:
+        raise ValueError(f"template {tpl.name!r} has no region(s) named {sorted(missing)}")
+    return out
+
+
+def _raise_if_failed(report: CompareReport) -> CompareReport:
     if not report.passed:
         msg = report.summary()
         if report.out_dir:
             msg += f"\n  report: {Path(report.out_dir) / 'report.html'}"
         raise AssertionError(msg)
     return report
+
+
+def assert_matches(template, candidate, out_dir=None, **kwargs) -> CompareReport:
+    """Raise AssertionError (with a per-region summary) unless every region matches."""
+    return _raise_if_failed(compare_file(template, candidate, out_dir=out_dir, **kwargs))
+
+
+async def compare_file_async(template, candidate, out_dir=None, **kwargs) -> CompareReport:
+    """Like compare_file, but also accepts Playwright *async* ``Download`` objects."""
+    import asyncio
+
+    path, name = await amaterialize(candidate, kwargs.pop("candidate_name", None))
+    return await asyncio.to_thread(
+        compare_file, template, path, out_dir=out_dir, candidate_name=name, **kwargs
+    )
+
+
+async def assert_matches_async(template, candidate, out_dir=None, **kwargs) -> CompareReport:
+    return _raise_if_failed(await compare_file_async(template, candidate, out_dir=out_dir, **kwargs))

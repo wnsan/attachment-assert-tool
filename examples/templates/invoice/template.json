@@ -1,0 +1,56 @@
+{
+  "format": "attachment-assert/1",
+  "name": "invoice",
+  "created": "2026-10-17T11:05:57+00:00",
+  "dpi": 72,
+  "reference": {
+    "file": "reference.pdf",
+    "original_name": "invoice_reference.pdf",
+    "sha256": "1291b82a321806d45e79a7e0efc62407ead1083950e167d2377e098718baeccc",
+    "pages": 2,
+    "page_sizes": [
+      [
+        600,
+        800
+      ],
+      [
+        600,
+        800
+      ]
+    ]
+  },
+  "defaults": {
+    "threshold": 0,
+    "max_diff_percent": 0.0,
+    "shift": 0
+  },
+  "regions": [
+    {
+      "name": "header",
+      "page": 0,
+      "x": 40,
+      "y": 40,
+      "w": 521,
+      "h": 81,
+      "image": "regions/01_header.png"
+    },
+    {
+      "name": "total",
+      "page": 0,
+      "x": 380,
+      "y": 680,
+      "w": 181,
+      "h": 61,
+      "image": "regions/02_total.png"
+    },
+    {
+      "name": "header p2",
+      "page": 1,
+      "x": 40,
+      "y": 40,
+      "w": 521,
+      "h": 81,
+      "image": "regions/03_header p2.png"
+    }
+  ]
+}

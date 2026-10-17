@@ -77,6 +77,73 @@ python -m attachment_assert create reference.pdf --out templates/invoice --dpi 1
 python -m attachment_assert show templates/invoice
 ```
 
+## Use it in Playwright e2e tests
+
+The same template folder (made in the UI or with `create`) works from Python and Node.
+Both use the bundled Python engine, so the pixels match what you saw in the UI.
+
+### Python: pytest-playwright
+
+```bash
+pip install "attachment-assert-tool[playwright] @ git+https://github.com/wnsan/attachment-assert-tool"
+```
+
+Installing the package registers a pytest plugin with an `attachment_assert` fixture. It accepts a Playwright `Download`, a file path, bytes or a file object:
+
+```python
+def test_invoice_download(page, attachment_assert):
+    page.goto("https://my.app/invoices/42")
+    with page.expect_download() as info:
+        page.click("text=Download PDF")
+    attachment_assert(info.value, "invoice")                  # raises AssertionError listing failed regions
+    attachment_assert(info.value, "invoice", only=["total"], shift=2, threshold=8)
+    report = attachment_assert.compare(info.value, "invoice")  # no raise, inspect report.results
+```
+
+```bash
+pytest --attachment-assert-templates tests/templates     # or ini: attachment_assert_templates = tests/templates
+```
+
+Reports go to `test-results/attachment-assert/<test id>/` (change it with `--attachment-assert-output`).
+Without pytest, `assert_matches(template, download)` / `compare_file(...)` take the same inputs.
+For the async API, use `await assert_matches_async(template, download)`.
+
+### Node / TypeScript: @playwright/test
+
+```bash
+npm i -D github:wnsan/attachment-assert-tool      # needs Python 3.9+ and: pip install pillow numpy pypdfium2
+```
+
+```ts
+import { test } from '@playwright/test';
+import { expect, compareAttachment } from 'attachment-assert/playwright';
+
+test('invoice PDF', async ({ page }) => {
+  await page.goto('/invoices/42');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('text=Download PDF')]);
+
+  await expect(download).toMatchAttachment('tests/templates/invoice');
+  await expect(download).toMatchAttachment('tests/templates/invoice', { only: ['total'], shift: 2, threshold: 8 });
+
+  const report = await compareAttachment(download, 'tests/templates/invoice');   // no throw
+  console.log(report.results.map(r => `${r.name}: ${r.status}`));
+});
+```
+
+If you already have your own `expect`, extend it with `base.extend(attachmentMatchers)`.
+`toMatchAttachment` accepts a `Download`, a file path, a `Buffer`, or a `Page`/`Locator` (as a screenshot).
+On failure, the HTML report and the reference/candidate/diff crops of the failing regions are attached to the Playwright HTML report.
+Options: `threshold`, `maxDiffPercent`, `shift`, `resize`, `only`, `outDir`, `templatesDir`, `python`, `attachAll`.
+
+The interpreter is found from `ATTACHMENT_ASSERT_PYTHON`, then `py -3` (Windows), `python3`, `python`.
+
+Working examples (both run in CI): [`e2e/python`](e2e/python) and [`e2e/node`](e2e/node), using the demo app in `e2e/server.js` and the template in `examples/templates/invoice`.
+
+```bash
+pytest e2e/python --attachment-assert-templates examples/templates
+npm ci && npx playwright install chromium && npx playwright test -c e2e/node
+```
+
 ## Tolerance
 
 | setting | meaning | default |

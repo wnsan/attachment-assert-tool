@@ -1,0 +1,23 @@
+{
+  "name": "attachment-assert",
+  "version": "0.2.0",
+  "description": "Assert PDFs / images / downloads against named-region templates pixel by pixel; Playwright matcher included",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/wnsan/attachment-assert-tool.git" },
+  "main": "js/index.js",
+  "types": "js/index.d.ts",
+  "exports": {
+    ".": { "types": "./js/index.d.ts", "default": "./js/index.js" },
+    "./playwright": { "types": "./js/playwright.d.ts", "default": "./js/playwright.js" },
+    "./package.json": "./package.json"
+  },
+  "files": ["js/", "attachment_assert/**/*.py", "attachment_assert/static/", "requirements.txt", "README.md", "LICENSE"],
+  "keywords": ["playwright", "pdf", "visual-regression", "pixel", "assert", "e2e"],
+  "engines": { "node": ">=18" },
+  "peerDependencies": { "@playwright/test": ">=1.30" },
+  "peerDependenciesMeta": { "@playwright/test": { "optional": true } },
+  "devDependencies": { "@playwright/test": "^1.50.0" },
+  "scripts": {
+    "test:e2e": "playwright test -c e2e/node"
+  }
+}
