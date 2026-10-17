@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "attachment-assert-tool"
+version = "0.1.0"
+description = "Define named regions on a PDF/image/document and assert other files match them pixel by pixel"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = ["pillow>=10.0", "numpy>=1.24", "pypdfium2>=4.20"]
+
+[project.scripts]
+attachment-assert = "attachment_assert.cli:main"
+
+[tool.setuptools]
+packages = ["attachment_assert"]
+
+[tool.setuptools.package-data]
+attachment_assert = ["static/*"]

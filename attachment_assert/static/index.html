@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Attachment Assert</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#f4f5f7;--panel:#fff;--line:#d9dce1;--acc:#2563eb;--ok:#16a34a;--bad:#dc2626;--warn:#ea8a00;--muted:#6b7280}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font:14px system-ui,"Segoe UI",Tahoma,sans-serif;color:#1f2937;background:var(--bg);height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:16px;padding:8px 16px;background:#111827;color:#fff}
+header h1{font-size:16px;margin:0;font-weight:600}
+.tabs button{background:none;border:0;color:#cbd5e1;padding:8px 12px;font-size:14px;cursor:pointer;border-bottom:2px solid transparent}
+.tabs button.on{color:#fff;border-color:#60a5fa}
+.view{display:none;flex:1;min-height:0}.view.on{display:flex}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.toolbar .sep{width:1px;height:22px;background:var(--line)}
+button,.btn{font:inherit;padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;white-space:nowrap}
+button:hover,.btn:hover{border-color:#9ca3af}
+button.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+button.danger{color:var(--bad)}
+button:disabled{opacity:.5;cursor:default}
+input,select{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:#fff}
+input[type=number]{width:72px}
+label.inline{display:inline-flex;gap:4px;align-items:center;color:var(--muted)}
+.col{display:flex;flex-direction:column;min-width:0;min-height:0}
+#define-main{flex:1}
+#workarea{flex:1;overflow:auto;position:relative;background:#e5e7eb}
+#dropzone{position:absolute;inset:24px;border:2px dashed #9ca3af;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px;text-align:center;padding:16px}
+#stage{position:relative;margin:24px;display:inline-block;box-shadow:0 2px 10px #0003;background:#fff;cursor:crosshair;user-select:none}
+#stage img{display:block;width:100%;height:100%;pointer-events:none;image-rendering:auto}
+.box{position:absolute;border:2px solid #2563eb;background:#2563eb22;cursor:move}
+.box.sel{border-color:#f59e0b;background:#f59e0b22;z-index:2}
+.box .lbl{position:absolute;left:-2px;top:-20px;background:#2563eb;color:#fff;font-size:11px;padding:1px 5px;border-radius:3px 3px 0 0;white-space:nowrap;pointer-events:none}
+.box.sel .lbl{background:#f59e0b}
+.box .h{position:absolute;width:10px;height:10px;background:#fff;border:2px solid #f59e0b;display:none}
+.box.sel .h{display:block}
+.h.nw{left:-6px;top:-6px;cursor:nwse-resize}.h.ne{right:-6px;top:-6px;cursor:nesw-resize}
+.h.sw{left:-6px;bottom:-6px;cursor:nesw-resize}.h.se{right:-6px;bottom:-6px;cursor:nwse-resize}
+.ghost{position:absolute;border:2px dashed #f59e0b;background:#f59e0b18;pointer-events:none}
+aside{width:360px;background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:12px}
+aside h3{margin:12px 0 6px;font-size:13px;text-transform:uppercase;color:var(--muted);letter-spacing:.04em}
+.reg{border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px;cursor:pointer}
+.reg.sel{border-color:#f59e0b;box-shadow:0 0 0 2px #f59e0b44}
+.reg .row{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.reg .row input[type=number]{width:62px}
+.reg .name{flex:1;font-weight:600}
+.small{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:auto 1fr;gap:6px 8px;align-items:center}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:8px;display:none;z-index:99;max-width:80vw}
+#toast.err{background:var(--bad)}
+#compare-main{flex:1;overflow:auto;padding:16px}
+.card{background:var(--panel);border-radius:10px;padding:12px 16px;margin-bottom:12px;box-shadow:0 1px 3px #0002}
+.banner{padding:10px 14px;border-radius:8px;color:#fff;font-weight:600;margin-bottom:10px}
+.pass{background:var(--ok)}.fail{background:var(--bad)}.error{background:var(--warn)}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;color:#fff;font-size:12px;margin-right:6px}
+.imgs{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.imgs figure{margin:0}.imgs img{max-width:380px;max-height:260px;border:1px solid var(--line);background:#fff;image-rendering:pixelated;cursor:zoom-in}
+figcaption{font-size:12px;color:var(--muted)}
+.overview img{max-width:100%;max-height:70vh;border:1px solid var(--line)}
+details summary{cursor:pointer;color:var(--muted)}
+.kbd{font-family:monospace;background:#f3f4f6;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Attachment Assert</h1>
+  <div class="tabs">
+    <button data-tab="define" class="on">1. Define regions</button>
+    <button data-tab="compare">2. Compare</button>
+  </div>
+  <span class="small" id="ws" style="margin-left:auto;color:#9ca3af"></span>
+</header>
+
+<!-- DEFINE -->
+<section class="view on" id="view-define">
+  <div class="col" id="define-main">
+    <div class="toolbar">
+      <label class="btn">Open reference file…<input type="file" id="ref-file" hidden></label>
+      <label class="inline">DPI <select id="dpi"><option>72</option><option>100</option><option selected>150</option><option>200</option><option>300</option></select></label>
+      <div class="sep"></div>
+      <button id="prev">&#9664;</button><span id="pageinfo" class="small">no file</span><button id="next">&#9654;</button>
+      <div class="sep"></div>
+      <button id="zout">−</button><span id="zinfo" class="small">100%</span><button id="zin">+</button><button id="zfit">Fit</button>
+      <div class="sep"></div>
+      <select id="tpl-load"><option value="">Load template…</option></select>
+    </div>
+    <div id="workarea">
+      <div id="dropzone">Drop a PDF / image here or click <b>&nbsp;Open reference file…&nbsp;</b><br>then drag rectangles over the parts you want to assert.</div>
+      <div id="stage" hidden><img id="pageimg" alt=""></div>
+    </div>
+  </div>
+  <aside>
+    <div class="grid">
+      <span>Template</span><input id="tpl-name" placeholder="e.g. invoice-header">
+      <span>Reference</span><span id="ref-name" class="small">—</span>
+    </div>
+    <h3>Default tolerance</h3>
+    <div class="grid">
+      <span title="Per-channel colour difference (0-255) still counted as equal">Threshold</span><input type="number" id="d-threshold" value="0" min="0" max="255">
+      <span title="% of region pixels allowed to exceed the threshold">Max diff %</span><input type="number" id="d-maxpct" value="0" min="0" max="100" step="0.01">
+      <span title="Search ±N pixels for the best alignment">Shift ±px</span><input type="number" id="d-shift" value="0" min="0" max="50">
+    </div>
+    <div class="small" style="margin-top:4px">0 / 0 / 0 = exact pixel-by-pixel match.</div>
+    <div style="display:flex;gap:8px;margin:12px 0">
+      <button class="primary" id="save" style="flex:1">Save template</button>
+      <button id="dl" title="Download template folder as .zip">.zip</button>
+      <button class="danger" id="del-tpl" title="Delete saved template">Delete</button>
+    </div>
+    <h3>Regions <span id="rcount"></span></h3>
+    <div class="small">Drag on the page to add. Select + <span class="kbd">Del</span> to remove, arrows to nudge (<span class="kbd">Shift</span> = 10px). Blank tolerance = default.</div>
+    <div id="regions" style="margin-top:8px"></div>
+  </aside>
+</section>
+
+<!-- COMPARE -->
+<section class="view" id="view-compare">
+  <div class="col" style="flex:1">
+    <div class="toolbar">
+      <label class="inline">Template <select id="c-tpl"></select></label>
+      <label class="btn">Choose file(s) to check…<input type="file" id="c-file" multiple hidden></label>
+      <span id="c-files" class="small">none</span>
+      <label class="inline" title="Scale candidate pages to the reference size if they differ"><input type="checkbox" id="c-resize"> resize pages</label>
+      <details style="display:inline-block"><summary>override tolerance</summary>
+        <label class="inline">threshold <input type="number" id="c-threshold" min="0" max="255" placeholder="tpl"></label>
+        <label class="inline">max diff % <input type="number" id="c-maxpct" min="0" max="100" step="0.01" placeholder="tpl"></label>
+        <label class="inline">shift <input type="number" id="c-shift" min="0" max="50" placeholder="tpl"></label>
+      </details>
+      <button class="primary" id="c-run">Compare</button>
+    </div>
+    <div id="compare-main"><div class="small">Pick a template, choose one or more candidate files (or drop them here) and press Compare.</div></div>
+  </div>
+</section>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = async (url, opt = {}) => {
+  const r = await fetch(url, opt);
+  const ct = r.headers.get('content-type') || '';
+  const data = ct.includes('json') ? await r.json() : await r.text();
+  if (!r.ok) { const e = new Error(data.error || data || r.statusText); e.data = data; e.status = r.status; throw e; }
+  return data;
+};
+let toastT;
+function toast(msg, err) { const t = $('#toast'); t.textContent = msg; t.className = err ? 'err' : ''; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', err ? 6000 : 2500); }
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ---------- tabs ----------
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'view-' + b.dataset.tab));
+});
+
+// ---------- state ----------
+const S = { doc: null, page: 0, zoom: 1, regions: [], sel: -1, loadedTpl: null };
+const stage = $('#stage'), img = $('#pageimg'), work = $('#workarea');
+
+async function refreshTemplates(select) {
+  const list = await api('/api/templates');
+  const opts = list.map(t => `<option value="${esc(t.dir)}">${esc(t.name)} (${t.regions ?? '?'} regions)</option>`).join('');
+  $('#tpl-load').innerHTML = '<option value="">Load template…</option>' + opts;
+  const cur = select || $('#c-tpl').value;
+  $('#c-tpl').innerHTML = opts || '<option value="">(no templates yet)</option>';
+  if (cur && list.some(t => t.dir === cur)) $('#c-tpl').value = cur;
+}
+
+// ---------- open documents ----------
+async function upload(file, dpi) {
+  return api('/api/upload?dpi=' + dpi, { method: 'POST', headers: { 'X-Filename': encodeURIComponent(file.name) }, body: file });
+}
+async function openReference(file) {
+  toast('Rendering ' + file.name + '…');
+  try {
+    const doc = await upload(file, $('#dpi').value);
+    const keep = S.regions.length && confirm('Keep the current regions on the new file?');
+    setDoc(doc, keep ? S.regions : []);
+    S.loadedTpl = null;
+    if (!$('#tpl-name').value) $('#tpl-name').value = file.name.replace(/\.[^.]+$/, '');
+    toast('Loaded ' + file.name + ' (' + doc.pages.length + ' page' + (doc.pages.length > 1 ? 's' : '') + ')');
+  } catch (e) { toast(e.message, true); }
+}
+function setDoc(doc, regions) {
+  S.doc = doc; S.page = 0; S.regions = regions.map(r => ({ ...r })); S.sel = -1;
+  $('#ref-name').textContent = doc.name + ' · ' + doc.dpi + ' dpi';
+  $('#dropzone').hidden = true; stage.hidden = false;
+  showPage(0); fit(); renderList();
+}
+$('#ref-file').onchange = e => { if (e.target.files[0]) openReference(e.target.files[0]); e.target.value = ''; };
+
+$('#tpl-load').onchange = async e => {
+  const name = e.target.value; e.target.value = '';
+  if (!name) return;
+  try {
+    const { template: t, doc } = await api('/api/templates/' + encodeURIComponent(name));
+    if (!doc) throw new Error('template has no reference file');
+    $('#tpl-name').value = t.name;
+    $('#d-threshold').value = t.defaults.threshold; $('#d-maxpct').value = t.defaults.max_diff_percent; $('#d-shift').value = t.defaults.shift;
+    setDoc(doc, t.regions);
+    S.loadedTpl = name;
+    toast('Loaded template ' + t.name);
+  } catch (e) { toast(e.message, true); }
+};
+
+// ---------- page view ----------
+function showPage(i) {
+  if (!S.doc) return;
+  S.page = Math.max(0, Math.min(S.doc.pages.length - 1, i));
+  img.src = `/api/doc/${S.doc.id}/page/${S.page}.png`;
+  $('#pageinfo').textContent = `page ${S.page + 1} / ${S.doc.pages.length}`;
+  applyZoom(); drawBoxes();
+}
+function pageSize() { return S.doc.pages[S.page]; }
+function applyZoom() {
+  if (!S.doc) return;
+  const p = pageSize();
+  stage.style.width = p.w * S.zoom + 'px'; stage.style.height = p.h * S.zoom + 'px';
+  $('#zinfo').textContent = Math.round(S.zoom * 100) + '%';
+  drawBoxes();
+}
+function fit() { if (!S.doc) return; S.zoom = Math.min(4, (work.clientWidth - 60) / pageSize().w); applyZoom(); }
+function zoomBy(f) { S.zoom = Math.max(0.1, Math.min(8, S.zoom * f)); applyZoom(); }
+$('#prev').onclick = () => showPage(S.page - 1);
+$('#next').onclick = () => showPage(S.page + 1);
+$('#zin').onclick = () => zoomBy(1.25); $('#zout').onclick = () => zoomBy(0.8); $('#zfit').onclick = fit;
+work.addEventListener('wheel', e => { if (e.ctrlKey) { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.1 : 0.9); } }, { passive: false });
+
+function drawBoxes() {
+  stage.querySelectorAll('.box').forEach(b => b.remove());
+  S.regions.forEach((r, i) => {
+    if (r.page !== S.page) return;
+    const b = document.createElement('div');
+    b.className = 'box' + (i === S.sel ? ' sel' : '');
+    b.dataset.i = i;
+    Object.assign(b.style, { left: r.x * S.zoom + 'px', top: r.y * S.zoom + 'px', width: r.w * S.zoom + 'px', height: r.h * S.zoom + 'px' });
+    b.innerHTML = `<span class="lbl">${esc(r.name)}</span>` + ['nw', 'ne', 'sw', 'se'].map(h => `<div class="h ${h}" data-h="${h}"></div>`).join('');
+    stage.appendChild(b);
+  });
+}
+
+// ---------- mouse: draw / move / resize ----------
+function pt(e) {
+  const rc = stage.getBoundingClientRect(), p = pageSize();
+  return { x: Math.max(0, Math.min(p.w, Math.round((e.clientX - rc.left) / S.zoom))), y: Math.max(0, Math.min(p.h, Math.round((e.clientY - rc.top) / S.zoom))) };
+}
+let drag = null;
+stage.addEventListener('mousedown', e => {
+  if (e.button !== 0 || !S.doc) return;
+  e.preventDefault();
+  const p = pt(e), box = e.target.closest('.box');
+  if (box) {
+    const i = +box.dataset.i; select(i);
+    drag = { mode: e.target.dataset.h || 'move', i, start: p, orig: { ...S.regions[i] } };
+  } else {
+    const g = document.createElement('div'); g.className = 'ghost'; stage.appendChild(g);
+    drag = { mode: 'draw', start: p, ghost: g };
+  }
+});
+window.addEventListener('mousemove', e => {
+  if (!drag) return;
+  const p = pt(e), P = pageSize();
+  if (drag.mode === 'draw') {
+    const x = Math.min(p.x, drag.start.x), y = Math.min(p.y, drag.start.y);
+    Object.assign(drag.ghost.style, { left: x * S.zoom + 'px', top: y * S.zoom + 'px', width: Math.abs(p.x - drag.start.x) * S.zoom + 'px', height: Math.abs(p.y - drag.start.y) * S.zoom + 'px' });
+    return;
+  }
+  const r = S.regions[drag.i], o = drag.orig, dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+  if (drag.mode === 'move') {
+    r.x = Math.max(0, Math.min(P.w - o.w, o.x + dx)); r.y = Math.max(0, Math.min(P.h - o.h, o.y + dy));
+  } else {
+    let x0 = o.x, y0 = o.y, x1 = o.x + o.w, y1 = o.y + o.h;
+    if (drag.mode.includes('w')) x0 = o.x + dx; if (drag.mode.includes('e')) x1 = o.x + o.w + dx;
+    if (drag.mode.includes('n')) y0 = o.y + dy; if (drag.mode.includes('s')) y1 = o.y + o.h + dy;
+    x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(P.w, x1); y1 = Math.min(P.h, y1);
+    r.x = Math.min(x0, x1); r.y = Math.min(y0, y1); r.w = Math.max(1, Math.abs(x1 - x0)); r.h = Math.max(1, Math.abs(y1 - y0));
+  }
+  drawBoxes(); syncRow(drag.i);
+});
+window.addEventListener('mouseup', e => {
+  if (!drag) return;
+  if (drag.mode === 'draw') {
+    drag.ghost.remove();
+    const p = pt(e), w = Math.abs(p.x - drag.start.x), h = Math.abs(p.y - drag.start.y);
+    if (w >= 3 && h >= 3) {
+      S.regions.push({ name: uniqueName('region_' + (S.regions.length + 1)), page: S.page, x: Math.min(p.x, drag.start.x), y: Math.min(p.y, drag.start.y), w, h });
+      S.sel = S.regions.length - 1; renderList(); drawBoxes();
+      const inp = document.querySelector(`.reg[data-i="${S.sel}"] .name`); if (inp) { inp.focus(); inp.select(); }
+    } else select(-1);
+  }
+  drag = null;
+});
+function uniqueName(base) { let n = base, k = 2; const has = x => S.regions.some(r => r.name.toLowerCase() === x.toLowerCase()); while (has(n)) n = base + '_' + k++; return n; }
+
+window.addEventListener('keydown', e => {
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName) || S.sel < 0 || !$('#view-define').classList.contains('on')) return;
+  const r = S.regions[S.sel], P = S.doc.pages[r.page], st = e.shiftKey ? 10 : 1;
+  if (e.key === 'Delete' || e.key === 'Backspace') { removeRegion(S.sel); e.preventDefault(); return; }
+  const mv = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st] }[e.key];
+  if (!mv) return;
+  e.preventDefault();
+  r.x = Math.max(0, Math.min(P.w - r.w, r.x + mv[0])); r.y = Math.max(0, Math.min(P.h - r.h, r.y + mv[1]));
+  drawBoxes(); syncRow(S.sel);
+});
+
+// ---------- region list ----------
+function select(i) {
+  S.sel = i;
+  if (i >= 0 && S.regions[i].page !== S.page) showPage(S.regions[i].page); else drawBoxes();
+  document.querySelectorAll('.reg').forEach(el => el.classList.toggle('sel', +el.dataset.i === i));
+  const row = document.querySelector(`.reg[data-i="${i}"]`); if (row) row.scrollIntoView({ block: 'nearest' });
+}
+function removeRegion(i) { S.regions.splice(i, 1); S.sel = -1; renderList(); drawBoxes(); }
+function renderList() {
+  $('#rcount').textContent = S.regions.length ? `(${S.regions.length})` : '';
+  const num = (i, k, v, ph = '') => `<input type="number" data-k="${k}" value="${v ?? ''}" placeholder="${ph}" title="${k}">`;
+  $('#regions').innerHTML = S.regions.map((r, i) => `
+    <div class="reg${i === S.sel ? ' sel' : ''}" data-i="${i}">
+      <div class="row" style="margin:0"><input class="name" data-k="name" value="${esc(r.name)}"><span class="small">p${r.page + 1}</span><button class="danger" data-act="del" title="Delete">✕</button></div>
+      <div class="row small">x${num(i, 'x', r.x)} y${num(i, 'y', r.y)}</div>
+      <div class="row small">w${num(i, 'w', r.w)} h${num(i, 'h', r.h)}</div>
+      <div class="row small">thr${num(i, 'threshold', r.threshold, 'def')} %${num(i, 'max_diff_percent', r.max_diff_percent, 'def')} ±${num(i, 'shift', r.shift, 'def')}</div>
+    </div>`).join('') || '<div class="small">No regions yet.</div>';
+}
+function syncRow(i) {
+  const row = document.querySelector(`.reg[data-i="${i}"]`); if (!row) return;
+  for (const k of ['x', 'y', 'w', 'h']) row.querySelector(`[data-k="${k}"]`).value = S.regions[i][k];
+}
+$('#regions').addEventListener('click', e => {
+  const row = e.target.closest('.reg'); if (!row) return;
+  const i = +row.dataset.i;
+  if (e.target.dataset.act === 'del') return removeRegion(i);
+  if (S.sel !== i) select(i);
+});
+$('#regions').addEventListener('input', e => {
+  const row = e.target.closest('.reg'), k = e.target.dataset.k; if (!row || !k) return;
+  const r = S.regions[+row.dataset.i], v = e.target.value;
+  if (k === 'name') r.name = v;
+  else if (['threshold', 'max_diff_percent', 'shift'].includes(k)) { if (v === '') delete r[k]; else r[k] = +v; }
+  else if (v !== '') r[k] = Math.max(k === 'w' || k === 'h' ? 1 : 0, Math.round(+v));
+  drawBoxes();
+});
+
+// ---------- save / delete / download ----------
+$('#save').onclick = async () => {
+  if (!S.doc) return toast('Open a reference file first', true);
+  if (!S.regions.length) return toast('Draw at least one region', true);
+  const name = $('#tpl-name').value.trim(); if (!name) return toast('Give the template a name', true);
+  const body = { name, doc_id: S.doc.id, regions: S.regions, overwrite: S.loadedTpl === name,
+    defaults: { threshold: +$('#d-threshold').value || 0, max_diff_percent: +$('#d-maxpct').value || 0, shift: +$('#d-shift').value || 0 } };
+  const send = () => api('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  try {
+    let res;
+    try { res = await send(); }
+    catch (e) { if (e.status === 409 && confirm(`Template "${name}" exists. Overwrite?`)) { body.overwrite = true; res = await send(); } else throw e; }
+    S.loadedTpl = name;
+    await refreshTemplates(name);
+    $('#c-tpl').value = [...$('#c-tpl').options].find(o => o.textContent.startsWith(name + ' ('))?.value || $('#c-tpl').value;
+    toast(`Saved "${name}" with ${res.template.regions.length} regions`);
+  } catch (e) { toast(e.message, true); }
+};
+$('#dl').onclick = () => { const n = $('#tpl-name').value.trim(); if (n) location.href = '/api/templates/' + encodeURIComponent(n) + '/zip'; };
+$('#del-tpl').onclick = async () => {
+  const n = $('#tpl-name').value.trim(); if (!n || !confirm(`Delete saved template "${n}"?`)) return;
+  try { await api('/api/templates/' + encodeURIComponent(n), { method: 'DELETE' }); S.loadedTpl = null; await refreshTemplates(); toast('Deleted ' + n); } catch (e) { toast(e.message, true); }
+};
+
+// ---------- compare ----------
+let candFiles = [];
+function setCand(files) { candFiles = [...files]; $('#c-files').textContent = candFiles.map(f => f.name).join(', ') || 'none'; }
+$('#c-file').onchange = e => setCand(e.target.files);
+$('#c-run').onclick = async () => {
+  const tpl = $('#c-tpl').value;
+  if (!tpl) return toast('Save a template first', true);
+  if (!candFiles.length) return toast('Choose a file to check', true);
+  const qs = new URLSearchParams({ template: tpl, resize: $('#c-resize').checked ? 1 : 0 });
+  [['threshold', '#c-threshold'], ['max_diff_percent', '#c-maxpct'], ['shift', '#c-shift']].forEach(([k, s]) => { if ($(s).value !== '') qs.set(k, $(s).value); });
+  const main = $('#compare-main'); main.innerHTML = '';
+  $('#c-run').disabled = true;
+  for (const f of candFiles) {
+    const holder = document.createElement('div'); holder.className = 'card'; holder.innerHTML = `<div class="small">Comparing ${esc(f.name)}…</div>`; main.appendChild(holder);
+    try {
+      const rep = await api('/api/compare?' + qs, { method: 'POST', headers: { 'X-Filename': encodeURIComponent(f.name) }, body: f });
+      holder.outerHTML = renderReport(rep);
+    } catch (e) { holder.innerHTML = `<div class="banner error">${esc(f.name)}: ${esc(e.message)}</div>`; }
+  }
+  $('#c-run').disabled = false;
+};
+function renderReport(rep) {
+  const st = rep.passed ? 'pass' : 'fail', c = rep.counts, base = rep.run;
+  const regs = rep.results.map(r => `
+    <div class="card" style="box-shadow:none;border:1px solid var(--line)">
+      <span class="tag ${r.status}">${r.status.toUpperCase()}</span><b>${esc(r.name)}</b>
+      <span class="small"> page ${r.page + 1} · box [${r.box.join(', ')}] · ${r.diff_pixels}/${r.total_pixels} px differ (${r.diff_percent}%) · max Δ ${r.max_channel_diff}${r.offset[0] || r.offset[1] ? ' · offset ' + r.offset.join(',') : ''}</span>
+      <div class="small">${esc(r.message)}</div>
+      ${r.images && r.images.reference ? `<div class="imgs">${['reference', 'candidate', 'diff'].map(k => `<figure><a href="${base + r.images[k]}" target="_blank"><img src="${base + r.images[k]}"></a><figcaption>${k}</figcaption></figure>`).join('')}</div>` : ''}
+    </div>`).join('');
+  const pages = (rep.pages || []).map(p => `<details><summary>${esc(p)} (boxes: green = pass, red = fail)</summary><div class="overview"><img src="${base + p}"></div></details>`).join('');
+  return `<div class="card"><div class="banner ${st}">${st.toUpperCase()} — ${esc(rep.candidate)}: ${c.pass}/${rep.results.length} regions match (${c.fail} failed, ${c.error} errors)</div>
+    <div class="small" style="margin-bottom:8px">template ${esc(rep.template)} · <a href="${base}report.html" target="_blank">HTML report</a> · <a href="${base}report.json" target="_blank">JSON</a></div>
+    ${regs}${pages}</div>`;
+}
+
+// ---------- drag & drop ----------
+['dragover', 'drop'].forEach(ev => document.addEventListener(ev, e => {
+  e.preventDefault();
+  if (ev !== 'drop' || !e.dataTransfer.files.length) return;
+  if ($('#view-compare').classList.contains('on')) setCand(e.dataTransfer.files);
+  else openReference(e.dataTransfer.files[0]);
+}));
+window.addEventListener('resize', () => { if (S.doc && !drag) applyZoom(); });
+
+api('/api/info').then(i => { $('#ws').textContent = 'workspace: ' + i.workspace; $('#ref-file').accept = i.exts.join(','); });
+refreshTemplates();
+renderList();
+</script>
+</body>
+</html>
