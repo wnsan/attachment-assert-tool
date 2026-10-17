@@ -3,6 +3,7 @@ on: [push, pull_request]
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
@@ -11,5 +12,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r requirements.txt
-      - run: python -m unittest discover -s tests -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Python package + pytest-playwright
+        run: pip install ".[playwright]"
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Install browsers
+        run: python -m playwright install chromium
+      - name: Python e2e (pytest-playwright)
+        run: python -m pytest e2e/python --attachment-assert-templates examples/templates -v
+      - name: Node e2e (@playwright/test)
+        run: |
+          npm ci
+          npx playwright install chromium
+          npx playwright test -c e2e/node
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: reports-${{ matrix.os }}
+          path: |
+            test-results/
+            playwright-report/

@@ -4,12 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "attachment-assert-tool"
-version = "0.1.0"
+version = "0.2.0"
 description = "Define named regions on a PDF/image/document and assert other files match them pixel by pixel"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 dependencies = ["pillow>=10.0", "numpy>=1.24", "pypdfium2>=4.20"]
+
+[project.optional-dependencies]
+pytest = ["pytest>=7"]
+playwright = ["pytest>=7", "pytest-playwright>=0.4"]
+
+[project.entry-points.pytest11]
+attachment_assert = "attachment_assert.pytest_plugin"
 
 [project.scripts]
 attachment-assert = "attachment_assert.cli:main"

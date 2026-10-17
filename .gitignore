@@ -5,3 +5,7 @@ build/
 dist/
 .venv/
 attachment_assert_workspace/
+node_modules/
+test-results/
+playwright-report/
+.pytest_cache/

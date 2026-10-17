@@ -84,15 +84,12 @@ def _run(args) -> int:
         return 0
 
     if args.cmd == "compare":
-        from .compare import compare_pages
+        from .compare import compare_pages, filter_regions
         from .template import Template
 
         tpl = Template.load(args.template)
         if args.only:
-            wanted = {n.casefold() for n in args.only}
-            tpl.regions = [r for r in tpl.regions if r.name.casefold() in wanted]
-            if not tpl.regions:
-                raise ValueError(f"no regions named {args.only}")
+            tpl = filter_regions(tpl, args.only)
         overrides = {k: v for k, v in (("threshold", args.threshold),
                                        ("max_diff_percent", args.max_diff_percent),
                                        ("shift", args.shift)) if v is not None}
