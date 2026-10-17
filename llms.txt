@@ -1,0 +1,18 @@
+# attachment-assert-tool
+
+> Region-based pixel assertions for PDFs, images and documents. Name rectangles on a reference file (a template), then compare the same regions of a candidate file pixel by pixel. Usable from pytest-playwright (fixture `attachment_assert`), @playwright/test (`expect(download).toMatchAttachment(template)`), Python, and a CLI.
+
+## Docs
+- [AGENTS.md](AGENTS.md): full guide for AI agents: install, creating templates, Python and TypeScript Playwright recipes, options, report format, pitfalls, repo map
+- [README.md](README.md): human-oriented usage, UI walkthrough
+
+## Examples
+- [e2e/python/test_downloads.py](e2e/python/test_downloads.py): pytest-playwright fixture usage
+- [e2e/python/test_async_api.py](e2e/python/test_async_api.py): async Playwright Download
+- [e2e/node/downloads.spec.ts](e2e/node/downloads.spec.ts): @playwright/test matcher usage
+- [examples/templates/invoice/template.json](examples/templates/invoice/template.json): template format
+
+## Source
+- [attachment_assert/compare.py](attachment_assert/compare.py): comparison engine and public Python API
+- [js/index.d.ts](js/index.d.ts): Node API types
+- [js/playwright.d.ts](js/playwright.d.ts): matcher types

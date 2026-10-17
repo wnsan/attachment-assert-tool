@@ -11,6 +11,8 @@ Visual assertions for **PDFs, images and documents**:
 | PNG / JPG / BMP / GIF / TIFF / WebP | native pixels (multi-frame TIFF/GIF = multiple pages; transparency is flattened onto white) |
 | DOCX / XLSX / PPTX / ODT / RTF / TXT / HTML ... | converted to PDF with LibreOffice (`soffice`) when it is installed, then rendered like a PDF |
 
+> Using an AI coding agent? Point it at [AGENTS.md](AGENTS.md) (also indexed in [llms.txt](llms.txt)).
+
 ## Install
 
 Requires Python 3.9+.

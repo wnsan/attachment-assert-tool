@@ -24,6 +24,7 @@ export interface AttachmentAssertOptions {
 export interface RegionResult {
   name: string;
   page: number;
+  /** x0, y0, x1, y1 in template-DPI pixels */
   box: [number, number, number, number];
   status: 'pass' | 'fail' | 'error';
   message: string;
